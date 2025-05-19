@@ -17,7 +17,7 @@ app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true}));
 
-const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',');
+const allowedOrigins = process.env?.ALLOWED_ORIGINS?.split(",");
 
 app.use(cors({
     origin: (origin, callback) => {
