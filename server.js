@@ -18,7 +18,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true}));
 
 app.use(cors({
-    origin: "http://localhost:3000", // Only allow this origin
+    origin: "http://localhost:3000" || "https://truststock.vercel.app/", // Only allow this origin
     credentials: true                // Allow cookies to be sent
 }));
 app.use(cookieParser());
