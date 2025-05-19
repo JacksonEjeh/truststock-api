@@ -35,6 +35,7 @@ app.use(cookieParser());
 app.get("/", (req, res)=>{
     res.send("Welcome to my Truststock API");
 });
+
 app.use("/api/v1/auth", authRoutes);
 
 //Global Error Handler
