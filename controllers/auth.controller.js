@@ -197,11 +197,13 @@ const signIn = async (req, res, next) => {
 
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
-            sameSite: "Strict",
-            maxAge: 7 * 24 * 60 * 60 * 1000
-        })
+            secure: false,
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
 
-        res.status(200).json({ success: true, accessToken, user: { email: user.email, first_name: user.first_name, last_name: user.last_name, isProfileComplete: user.isProfileComplete } });
+
+        res.status(200).json({ success: true, accessToken: accessToken, user: { email: user.email, first_name: user.first_name, last_name: user.last_name, isProfileComplete: user.isProfileComplete } });
     }catch (error){
         next(error)
     }
@@ -210,15 +212,17 @@ const signIn = async (req, res, next) => {
 //Refresh Token
 const refreshToken = async (req, res, next) => {
     try {
-        const refreshToken = req.cookies.refreshToken;
+        const refreshToken = req.cookies.refreshToken;     
+        
         if(!refreshToken) throw new CustomError(401, "No refresh token provided", "AuthorizationError");
-
+        
         const decoded = jwt.verify( refreshToken, config.refresh_secret);
         const user = await User.findById(decoded.id);
-        if(!user || user.refreshToken !== refreshToken) throw new CustomError(403, "Invalid refresh token", "AuthorizationError");
 
+        if(!user) throw new CustomError(403, "Invalid refresh token", "AuthorizationError");
+        
         const newAccessToken = jwt.sign({ id: user._id }, config.jwt_secret, { expiresIn: "15m"});
-
+        
         res.status(200).json({ success: true, accessToken: newAccessToken});
     } catch (error) {
         next(error)   
@@ -296,5 +300,32 @@ const resetPassword = async (req, res, next) => {
     }
 };
 
+// change password
+const changePassword = async ( req, res, next) => {
+    try {
+        const { old_password, new_password } = req.body;
+        if ( !old_password ) throw new CustomError( 400, "Old password is required", "ValidationError");
+        if ( !new_password ) throw new CustomError( 400, "New password is required", "ValidationError");
 
-export { signIn, signUp, logout, forgotPassword, resetPassword, verifyOTP, resendOTP, refreshToken };
+        const user = await User.findOne({ _id: req.user._id }).select("+password");
+        if( !user ) throw new CustomError( 404, "User not found", "ValidationError");
+
+        const passwordMatch = await bcrypt.compare(old_password, user.password);
+        if( !passwordMatch ) throw new CustomError( 400, "Invalid old password", "ValidationError");
+
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{8,}$/; // At least 8 characters, 1 uppercase, 1 lowercase, 1 number
+        if ( !passwordRegex.test(new_password) ) {
+            throw new CustomError( 400, "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number", "ValidationError");
+        }
+
+        user.password = await bcrypt.hash(new_password, 10);
+        await user.save();
+
+        res.status(200).json({ success: true, message: "Password changed successfully" });
+    } catch (error) {
+        next(error);
+    }
+}
+
+
+export { signIn, signUp, logout, forgotPassword, resetPassword, verifyOTP, resendOTP, refreshToken, changePassword};

@@ -5,14 +5,27 @@ import User from "../models/user.model.js";
 
 const authenticate = async (req, res, next) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if(!token) throw new CustomError(401, "Unauthorized", "AuthError");
+        const authHeader = req.headers.authorization;
 
-        const decoded = jwt.verify(token, config.jwt_secret);
-        const user = await User.findById(decoded.id);
+        if(!authHeader || !authHeader.startsWith('Bearer ')) {
+            throw new CustomError(401, 'No token provided', 'AuthError')
+        }
 
-        if(!user) throw new CustomError(401, "User not found", "AuthError");
+        const token = authHeader.split(' ')[1];
 
+        let decoded;
+        try {
+            decoded = jwt.verify(token, config.jwt_secret);
+        } catch (error) {
+            if(error.name === 'TokenExpiredError') {
+                throw new CustomError(401, 'Access token expired', 'TokenExpired');
+            }
+            throw new CustomError(401, 'Invalid token', 'AuthError');
+        }
+        
+        const user = await User.findById(decoded.id).select('-password');
+        if(!user) throw new CustomError(401, 'User not found', 'AuthError');
+        
         req.user = user;
         next();
     } catch (error) {
