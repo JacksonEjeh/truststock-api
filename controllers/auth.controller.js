@@ -233,10 +233,13 @@ const refreshToken = async (req, res, next) => {
 const logout = async (req, res, next) => {
     try {
         const refreshToken = req.cookies.refreshToken;
+
         if (!refreshToken) throw new CustomError(401, "No refresh token provided", "AuthorizationError");
 
-        const user = await User.findOne({ refreshToken });
-        if(!user) throw new CustomError(403, "Invalid refresh token", "AuthorizationError");
+        const decoded = jwt.verify( refreshToken, config.refresh_secret);
+        if(!decoded) throw new CustomError(403, "Invalid refresh token", "AuthorizationError");
+        
+        const user = await User.findById(decoded.id);
 
         user.refreshToken = null;
         await user.save();
