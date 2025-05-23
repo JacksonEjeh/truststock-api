@@ -31,7 +31,7 @@ app.use(cors({
     credentials: true
 }));
 
-app.options('*', cors()); // <== Handles preflight requests globally
+
 
 app.use(cookieParser());
 
