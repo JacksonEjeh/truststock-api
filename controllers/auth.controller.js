@@ -195,6 +195,13 @@ const signIn = async (req, res, next) => {
         user.refreshToken = refreshToken;
         await user.save();
 
+        res.cookie("accessToken", accessToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "None",
+            maxAge: 15 * 60 * 1000,
+        });
+          
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
             secure: true,
