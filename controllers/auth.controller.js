@@ -251,7 +251,7 @@ const logout = async (req, res, next) => {
         user.refreshToken = null;
         await user.save();
         
-        res.clearCookie("refreshToken", { httpOnly: true, sameSite: "Strict" });
+        res.clearCookie("refreshToken", { httpOnly: true, sameSite: "None" });
 
         res.status(200).json({ success: true, message: "Logged out successfully" });
 
