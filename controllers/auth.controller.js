@@ -189,23 +189,16 @@ const signIn = async (req, res, next) => {
         const passwordMatch = await bcrypt.compare(password, user.password);
         if(!passwordMatch) throw new CustomError(400, "Invalid credentials", "ValidationError");
 
-        const accessToken = jwt.sign({ id: user._id}, config.jwt_secret, { expiresIn: "15m" });
+        const accessToken = jwt.sign({ id: user._id}, config.jwt_secret, { expiresIn: "30s" });
         const refreshToken = jwt.sign({ id: user._id}, config.refresh_secret, { expiresIn: "7d" });
 
         user.refreshToken = refreshToken;
         await user.save();
-
-        res.cookie("accessToken", accessToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "None",
-            maxAge: 15 * 60 * 1000,
-        });
           
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
-            secure: true,
-            sameSite: 'None',
+            secure: process.env.NODE_ENV === "production",
+            sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict",
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
@@ -228,7 +221,7 @@ const refreshToken = async (req, res, next) => {
 
         if(!user) throw new CustomError(403, "Invalid refresh token", "AuthorizationError");
         
-        const newAccessToken = jwt.sign({ id: user._id }, config.jwt_secret, { expiresIn: "15m"});
+        const newAccessToken = jwt.sign({ id: user._id }, config.jwt_secret, { expiresIn: "30s"});
         
         res.status(200).json({ success: true, accessToken: newAccessToken});
     } catch (error) {
