@@ -18,7 +18,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true}));
 
 
-const allowedOrigins = ['http://localhost:3000','https://truststock.vercel.app'];
+const allowedOrigins = ['http://localhost:3000','https://truststock.vercel.app','https://truststock.onrender.com'];
 
 app.use(cors({
     origin: (origin, callback) => {
