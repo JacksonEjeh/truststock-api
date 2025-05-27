@@ -198,8 +198,7 @@ const signIn = async (req, res, next) => {
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            domain: ".onrender.com", // <-- important for subdomains
-            sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict",
+            sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
@@ -244,8 +243,13 @@ const logout = async (req, res, next) => {
 
         user.refreshToken = null;
         await user.save();
-        
-        res.clearCookie("refreshToken", { httpOnly: true, sameSite: "None", secure: true });
+
+        res.clearCookie("refreshToken", {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "None",
+            domain: ".onrender.com",
+        });
 
         res.status(200).json({ success: true, message: "Logged out successfully" });
 
