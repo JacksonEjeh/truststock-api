@@ -198,6 +198,7 @@ const signIn = async (req, res, next) => {
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
+            domain: ".onrender.com", // <-- important for subdomains
             sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict",
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
