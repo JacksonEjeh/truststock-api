@@ -4,6 +4,7 @@ import sendEmail from "../utils/emailSender.js";
 import CustomError from "../utils/errorHandler.js";
 import bcrypt from "bcryptjs";
 import { config } from "../configs/config.js";
+import Wallet from "../models/wallet.model.js";
 
 const generateOTP = () =>({
     otp: Math.floor(100000 + Math.random() * 900000).toString(),
@@ -60,6 +61,14 @@ const signUp = async (req, res, next) => {
 
         await newUser.save({ session });
 
+        const userId = newUser._id;
+
+        // ✅ Create wallet for the new user
+        await Wallet.create([{
+            user: userId,
+            currency: 'USD',
+        }], { session });
+
         // ✅ Send email BEFORE committing the transaction
         const emailSent = await sendEmail(
             email,
@@ -103,9 +112,6 @@ const verifyOTP = async (req, res, next) => {
         
         if(!user) throw new CustomError(404, "User not found", "ValidationError");
         if(user.isVerified) throw new CustomError(400, "User is already verified", "ValidationError");
-
-        // console.log("Received OTP from request:", otp);
-        // console.log("Stored OTP in DB:", user.otp);
 
         if(!otp || !user.otp){
             throw new CustomError(400, "OTP expired or invalid", "ValidationError");
@@ -189,7 +195,7 @@ const signIn = async (req, res, next) => {
         const passwordMatch = await bcrypt.compare(password, user.password);
         if(!passwordMatch) throw new CustomError(400, "Invalid credentials", "ValidationError");
 
-        const accessToken = jwt.sign({ id: user._id}, config.jwt_secret, { expiresIn: "30s" });
+        const accessToken = jwt.sign({ id: user._id}, config.jwt_secret, { expiresIn: "15m" });
         const refreshToken = jwt.sign({ id: user._id}, config.refresh_secret, { expiresIn: "7d" });
 
         user.refreshToken = refreshToken;
@@ -221,7 +227,7 @@ const refreshToken = async (req, res, next) => {
 
         if(!user) throw new CustomError(403, "Invalid refresh token", "AuthorizationError");
         
-        const newAccessToken = jwt.sign({ id: user._id }, config.jwt_secret, { expiresIn: "30s"});
+        const newAccessToken = jwt.sign({ id: user._id }, config.jwt_secret, { expiresIn: "15m"});
         
         res.status(200).json({ success: true, accessToken: newAccessToken});
     } catch (error) {

@@ -5,6 +5,7 @@ import connectDataBase from "./configs/dbConnect.js";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.routes.js";
+import walletRoutes from './routes/wallet.routes.js'
 
 const app = express();
 const port = config.port || 5000;
@@ -40,7 +41,8 @@ app.get("/", (req, res)=>{
     res.send("Welcome to my Truststock API");
 });
 
-app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/auth", authRoutes);;
+app.use('/api/v1/wallet', walletRoutes);
 
 //Global Error Handler
 app.use((err, req, res, next) => {

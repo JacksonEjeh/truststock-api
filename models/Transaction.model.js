@@ -13,7 +13,7 @@ const transactionSchema = new mongoose.Schema({
     },
     method: {
         type: String,
-        enum: ['bank', 'crypto', 'card'],
+        enum: ['btc', 'ltc', 'usdt'],
         required: true
     },
     amount: {
@@ -22,7 +22,7 @@ const transactionSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['pending', 'confirmed', 'rejected'],
+        enum: ['pending', 'accepted', 'rejected'],
         default: 'pending'
     },
     walletAddress: String, 
