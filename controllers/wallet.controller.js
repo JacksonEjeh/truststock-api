@@ -82,9 +82,18 @@ export const initiateDeposit = async (req, res, next) => {
 export const initiateWithdrawal = async (req, res, next) => {
   const { amount, method, walletAddress } = req.body;
 
-  if (!Number.isFinite(amount) || amount <= 0 || !method || !walletAddress) {
+   let numericAmount = parseFloat(amount);
+  if (!Number.isFinite(numericAmount) || numericAmount <= 0 || !method || !walletAddress) {
     return next(new CustomError(400, "All fields are required and amount must be valid", "WithdrawalError"));
   }
+
+  // Enforce minimum deposit
+  if (numericAmount < 100) {
+    return next(new CustomError(400, "Minimum deposit amount is $100", "DepositError"));
+  }
+
+  // Round to 2 decimal places
+  numericAmount = Math.round(numericAmount * 100) / 100;
 
   const session = await Wallet.startSession();
   session.startTransaction();
@@ -97,8 +106,9 @@ export const initiateWithdrawal = async (req, res, next) => {
       throw new CustomError(400, "Insufficient balance", "WalletError");
     }
 
-    wallet.availableBalance -= amount;
-    wallet.pendingWithdrawals += amount;
+    const updatedPendingWithdrawal = parseFloat(wallet.pendingWithdrawals.toString()) + numericAmount;
+    wallet.availableBalance -= numericAmount;
+    wallet.pendingWithdrawals = Decimal128.fromString(updatedPendingWithdrawal.toFixed(2));
     wallet.lastTransactionAt = new Date();
     await wallet.save({ session });
 
