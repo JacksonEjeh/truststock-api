@@ -82,7 +82,7 @@ export const initiateDeposit = async (req, res, next) => {
 export const initiateWithdrawal = async (req, res, next) => {
   const { amount, method, walletAddress } = req.body;
 
-   let numericAmount = parseFloat(amount);
+  let numericAmount = parseFloat(amount);
   if (!Number.isFinite(numericAmount) || numericAmount <= 0 || !method || !walletAddress) {
     return next(new CustomError(400, "All fields are required and amount must be valid", "WithdrawalError"));
   }

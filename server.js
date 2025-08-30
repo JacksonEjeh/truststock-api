@@ -15,7 +15,8 @@ connectDataBase();
 const allowedOrigins = [
   'http://localhost:3000',
   'https://truststock.vercel.app',
-  'https://truststock.onrender.com'
+  'https://truststock.onrender.com',
+  'https://truststock.vercel.app/'
 ];
 
 // ✅ CORS middleware at the top
