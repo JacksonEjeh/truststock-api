@@ -1,8 +1,8 @@
 import cron from 'node-cron';
 import mongoose from 'mongoose';
-import Transaction from '../../models/transaction.model.js';
 import Wallet from '../../models/wallet.model.js';
 import { calculateROI } from './roiCalculator.js';
+import Transaction from '../../models/transaction.model.js';
 
 // Run every midnight
 const monitorDeposits = () => {
@@ -53,7 +53,7 @@ const monitorDeposits = () => {
 
             await session.commitTransaction();
             session.endSession();
-            console.log('✅ ROI monitoring completed successfully.');
+            console.log('ROI monitoring completed successfully.');
         } catch (error) {
             await session.abortTransaction();
             session.endSession();
