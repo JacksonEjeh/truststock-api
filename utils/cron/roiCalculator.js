@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import Transaction from '../../models/transaction.model.js';
+import Transaction from '../../models/transactionModel.js';
 import Wallet from '../../models/wallet.model.js';
 
 

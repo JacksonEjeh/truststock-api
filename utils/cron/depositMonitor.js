@@ -2,7 +2,7 @@ import cron from 'node-cron';
 import mongoose from 'mongoose';
 import Wallet from '../../models/wallet.model.js';
 import { calculateROI } from './roiCalculator.js';
-import Transaction from '../../models/transaction.model.js';
+import Transaction from '../../models/transactionModel.js';
 
 // Run every midnight
 const monitorDeposits = () => {
