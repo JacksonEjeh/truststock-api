@@ -6,11 +6,18 @@ import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.routes.js";
 import walletRoutes from './routes/wallet.routes.js'
+import kycRoutes from './routes/kyc.routes.js'
+import depositRoutes from './routes/deposit.approval.routes.js'
+import transactionRoutes from './routes/transaction.routes.js'
+import { schedule } from "node-cron";
+import depositMonitor from "./utils/cron/depositMonitor.js";
 
 const app = express();
 const port = config.port || 5000;
 
 connectDataBase();
+schedule('0 0 * * *', depositMonitor); // Runs every 24 hours
+
 
 const allowedOrigins = [
   'http://localhost:3000',
@@ -46,6 +53,9 @@ app.get("/", (req, res)=>{
 });
 app.use("/api/v1/auth", authRoutes);
 app.use('/api/v1/wallet', walletRoutes);
+app.use('/api/v1/kyc', kycRoutes); 
+app.use('/api/v1/review', depositRoutes);
+app.use('/api/v1/transaction', transactionRoutes);
 
 // ✅ Global Error Handler (only one)
 app.use((err, req, res, next) => {

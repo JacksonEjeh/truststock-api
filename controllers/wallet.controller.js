@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import Transaction from "../models/Transaction.model.js";
+import Transaction from "../models/transaction.model.js";
 import Wallet from "../models/wallet.model.js"
 import CustomError from "../utils/errorHandler.js";
 
@@ -9,7 +9,6 @@ const generateRef = () => {
     return 'TXN-' + Math.random().toString(36).substr(2, 9).toUpperCase();
 };
 
-// GET Wallet
 export const getWallet = async (req, res, next) => {
   try {
     const wallet = await Wallet.findOne({ user: req.user._id });
@@ -25,7 +24,6 @@ export const getWallet = async (req, res, next) => {
 export const initiateDeposit = async (req, res, next) => {
   const { amount, method } = req.body;
 
-  // Parse and validate amount
   let numericAmount = parseFloat(amount);
   if (!Number.isFinite(numericAmount) || numericAmount <= 0 || !method) {
     return next(
@@ -33,12 +31,10 @@ export const initiateDeposit = async (req, res, next) => {
     );
   }
 
-  // Enforce minimum deposit
   if (numericAmount < 100) {
     return next(new CustomError(400, "Minimum deposit amount is $100", "DepositError"));
   }
 
-  // Round to 2 decimal places
   numericAmount = Math.round(numericAmount * 100) / 100;
 
   const session = await Wallet.startSession();
@@ -77,7 +73,6 @@ export const initiateDeposit = async (req, res, next) => {
   }
 };
 
-
 // INITIATE WITHDRAWAL
 export const initiateWithdrawal = async (req, res, next) => {
   const { amount, method, walletAddress } = req.body;
@@ -87,7 +82,6 @@ export const initiateWithdrawal = async (req, res, next) => {
     return next(new CustomError(400, "All fields are required and amount must be valid", "WithdrawalError"));
   }
 
-  // Enforce minimum deposit
   if (numericAmount < 100) {
     return next(new CustomError(400, "Minimum deposit amount is $100", "DepositError"));
   }
@@ -135,7 +129,6 @@ export const initiateWithdrawal = async (req, res, next) => {
 };
 
 // get transaction history for current user
-
 export const getUserTransactions = async (req, res, next) => {
     try {
         const transactions = await Transaction.find({ user: req.user._id}).sort({ createdAt: -1 })

@@ -32,10 +32,6 @@ const walletSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.Decimal128,
         default: 0.0,
     },
-    cryptoWallet: {
-        BTC: { type: String, default: null },
-        ETH: { type: String, default: null },
-    },
     lastTransactionAt: {
         type: Date,
     }
@@ -45,7 +41,6 @@ const walletSchema = new mongoose.Schema({
 
 walletSchema.set('toJSON', {
     transform: (doc, ret) => {
-      // Convert Decimal128 fields
       ret.availableBalance = parseFloat(ret.availableBalance?.toString());
       ret.pendingDeposits = parseFloat(ret.pendingDeposits?.toString());
       ret.pendingWithdrawals = parseFloat(ret.pendingWithdrawals?.toString());
@@ -54,12 +49,10 @@ walletSchema.set('toJSON', {
       return ret;
     }
 });
-  
+
 walletSchema.methods.getTotalValue = function () {
     return this.availableBalance + this.lockedBalance + this.pendingDeposits;
 };
-
-
 
 const Wallet = mongoose.model('Wallet', walletSchema);
 export default Wallet;

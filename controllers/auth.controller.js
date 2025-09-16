@@ -250,12 +250,15 @@ const logout = async (req, res, next) => {
         user.refreshToken = null;
         await user.save();
 
-        res.clearCookie("refreshToken", {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "None",
-            domain: ".onrender.com",
-        });
+        // res.clearCookie("refreshToken", {
+        //     httpOnly: true,
+        //     secure: process.env.NODE_ENV === "production",
+        //     sameSite: "None",
+        //    // domain: ".onrender.com",
+        // });
+
+        res.clearCookie("refreshToken", { httpOnly: true, secure: true, sameSite: "production" ? "None" : "Lax"});
+
 
         res.status(200).json({ success: true, message: "Logged out successfully" });
 

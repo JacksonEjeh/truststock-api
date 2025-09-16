@@ -35,10 +35,44 @@ const userSchema = new mongoose.Schema({
             message: "Date of birth cannot be in the future"
         }
     },
+    role: { type: String, enum: ["user", "admin"], default: "user" },
     country_of_residence: { type: String, trim: true, lowercase: true },
     city: { type: String, trim: true, lowercase: true },
     street: { type: String, trim: true, lowercase: true },
     postal_code: { type: String, trim: true, lowercase: true },
+    // KYC fields
+    idDocuments: [
+        {
+            type: {
+                type: String,
+                enum: ["passport", "drivers_license", "national_id", "ssn"],
+            },
+            url: String,       
+            public_id: String,
+            uploadedAt: { type: Date, default: Date.now },
+        },
+    ],
+
+    selfieCaptures: [
+        {
+            label: { type: String },
+            url: String,
+            public_id: String,
+            uploadedAt: { type: Date, default: Date.now },
+        },
+    ],
+
+    kyc: {
+        status: {
+            type: String,
+            enum: ["unsubmitted", "pending", "approved", "rejected"],
+            default: "unsubmitted",
+        },
+        verifiedAt: Date,
+        reviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // admin
+        notes: String,
+    },
+
     password: { type: String, required: true, select: false },
     otp: { type: String, select: false },
     otpExpiresAt: { type: Date, select: false },
