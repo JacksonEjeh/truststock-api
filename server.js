@@ -9,6 +9,7 @@ import walletRoutes from './routes/wallet.routes.js'
 import kycRoutes from './routes/kyc.routes.js'
 import depositRoutes from './routes/deposit.approval.routes.js'
 import transactionRoutes from './routes/transaction.routes.js'
+import investmentPlanRoutes from "./routes/investmentPlan.routes.js";
 import { schedule } from "node-cron";
 import depositMonitor from "./utils/cron/depositMonitor.js";
 
@@ -56,6 +57,7 @@ app.use('/api/v1/wallet', walletRoutes);
 app.use('/api/v1/kyc', kycRoutes); 
 app.use('/api/v1/review', depositRoutes);
 app.use('/api/v1/transaction', transactionRoutes);
+app.use("/api/v1/investment-plans", investmentPlanRoutes);
 
 // ✅ Global Error Handler (only one)
 app.use((err, req, res, next) => {
