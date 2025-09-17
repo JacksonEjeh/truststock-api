@@ -10,14 +10,15 @@ import kycRoutes from './routes/kyc.routes.js'
 import depositRoutes from './routes/deposit.approval.routes.js'
 import transactionRoutes from './routes/transaction.routes.js'
 import investmentPlanRoutes from "./routes/investmentPlan.routes.js";
+import userInvestments from './routes/userInvestment.routes.js';
 import { schedule } from "node-cron";
-import depositMonitor from "./utils/cron/depositMonitor.js";
+import monitorInvestment from "./utils/cron/monitorInvestment.js";
 
 const app = express();
 const port = config.port || 5000;
 
 connectDataBase();
-schedule('0 0 * * *', depositMonitor); // Runs every 24 hours
+schedule('0 0 * * *', monitorInvestment); // Runs every 24 hours
 
 
 const allowedOrigins = [
@@ -58,6 +59,7 @@ app.use('/api/v1/kyc', kycRoutes);
 app.use('/api/v1/review', depositRoutes);
 app.use('/api/v1/transaction', transactionRoutes);
 app.use("/api/v1/investment-plans", investmentPlanRoutes);
+app.use("/api/v1/investments", userInvestments);
 
 // ✅ Global Error Handler (only one)
 app.use((err, req, res, next) => {

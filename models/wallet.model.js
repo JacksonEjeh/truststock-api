@@ -3,22 +3,22 @@ import mongoose from "mongoose";
 const walletSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        ref: "User",
         required: true,
         unique: true,
     },
     currency: {
         type: String,
-        enum: ['USD', 'EUR', 'BTC', 'ETH'],
-        default: 'USD',
+        enum: ["USD", "EUR", "BTC", "ETH"],
+        default: "USD",
     },
     availableBalance: {
         type: mongoose.Schema.Types.Decimal128,
         default: 0.0,
     },
-    lockedBalance: {
+    investedBalance: {
         type: mongoose.Schema.Types.Decimal128,
-        default: 0.0,
+        default: 0.0, // locked in investment plans
     },
     pendingDeposits: {
         type: mongoose.Schema.Types.Decimal128,
@@ -28,31 +28,42 @@ const walletSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.Decimal128,
         default: 0.0,
     },
+    accruedInterest: {
+        type: mongoose.Schema.Types.Decimal128,
+        default: 0.0, // daily ROI accumulated but not yet matured
+    },
     totalEarnings: {
         type: mongoose.Schema.Types.Decimal128,
-        default: 0.0,
+        default: 0.0, // all-time profit
     },
     lastTransactionAt: {
         type: Date,
-    }
-}, {
-    timestamps: true
-});
+    },
+}, { timestamps: true });
 
-walletSchema.set('toJSON', {
+// Ensure decimals are converted to float in API responses
+walletSchema.set("toJSON", {
     transform: (doc, ret) => {
-      ret.availableBalance = parseFloat(ret.availableBalance?.toString());
-      ret.pendingDeposits = parseFloat(ret.pendingDeposits?.toString());
-      ret.pendingWithdrawals = parseFloat(ret.pendingWithdrawals?.toString());
-      ret.lockedBalance = parseFloat(ret.lockedBalance?.toString());
-      ret.totalEarnings = parseFloat(ret.totalEarnings?.toString());
-      return ret;
-    }
+        const convertDecimal = (val) => parseFloat(val?.toString() || "0");
+        ret.availableBalance = convertDecimal(ret.availableBalance);
+        ret.investedBalance = convertDecimal(ret.investedBalance);
+        ret.pendingDeposits = convertDecimal(ret.pendingDeposits);
+        ret.pendingWithdrawals = convertDecimal(ret.pendingWithdrawals);
+        ret.accruedInterest = convertDecimal(ret.accruedInterest);
+        ret.totalEarnings = convertDecimal(ret.totalEarnings);
+        return ret;
+    },
 });
 
+// Helper to compute total wallet value
 walletSchema.methods.getTotalValue = function () {
-    return this.availableBalance + this.lockedBalance + this.pendingDeposits;
+    return (
+        parseFloat(this.availableBalance.toString()) +
+        parseFloat(this.investedBalance.toString()) +
+        parseFloat(this.pendingDeposits.toString()) +
+        parseFloat(this.accruedInterest.toString())
+    );
 };
 
-const Wallet = mongoose.model('Wallet', walletSchema);
+const Wallet = mongoose.model("Wallet", walletSchema);
 export default Wallet;

@@ -11,7 +11,6 @@ import authorize from "../utils/authorize.js";
 
 const router = express.Router();
 
-// CRUD endpoints
 router.post("/", authenticate, authorize("admin"), createInvestmentPlan);
 router.get("/", authenticate, getInvestmentPlans);        
 router.get("/:id", authenticate, authorize("admin"), getInvestmentPlanById);      
