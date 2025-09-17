@@ -4,24 +4,64 @@ import Wallet from "../models/wallet.model.js";
 import CustomError from "../utils/errorHandler.js";
 import { investmentPlans } from "../configs/config.js";
 
-//Create a new transaction
+// Create a new transaction (deposit, investment, etc.)
 export const createTransaction = async (req, res, next) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const { type, amount, method, investmentPlan } = req.body;
     const userId = req.user._id;
 
+    if (!amount || amount <= 0) {
+      throw new CustomError(400, "Invalid transaction amount", "ValidationError");
+    }
+
+    // Find wallet
+    const wallet = await Wallet.findOne({ user: userId }).session(session);
+    if (!wallet) throw new CustomError(404, "Wallet not found", "ValidationError");
+
     let investmentDuration, returnOnInvestment;
 
-    if (type === "deposit" && investmentPlan) {
+    // Investment logic
+    if (type === "investment") {
+      if (!investmentPlan) {
+        throw new CustomError(400, "Investment plan is required", "ValidationError");
+      }
+
       const planConfig = investmentPlans[investmentPlan];
       if (!planConfig) {
         throw new CustomError(400, "Invalid investment plan selected", "ValidationError");
       }
+
       investmentDuration = planConfig.duration;
       returnOnInvestment = planConfig.roi;
+
+      // this one de check for available balance
+      const available = parseFloat(wallet.availableBalance.toString());
+      if (available < amount) {
+        throw new CustomError(400, "Insufficient available balance for investment", "ValidationError");
+      }
+
+      // Then this one de educt from available balance
+      wallet.availableBalance = mongoose.Types.Decimal128.fromString(
+        (available - amount).toString()
+      );
+      wallet.lastTransactionAt = new Date();
+      await wallet.save({ session });
     }
 
-  
+    // normal deposit na him be this one, funds go to pending) ---
+    if (type === "deposit") {
+      const pending = parseFloat(wallet.pendingDeposits.toString());
+      wallet.pendingDeposits = mongoose.Types.Decimal128.fromString(
+        (pending + amount).toString()
+      );
+      wallet.lastTransactionAt = new Date();
+      await wallet.save({ session });
+    }
+
+    // Create transaction
     const txn = new Transaction({
       user: userId,
       type,
@@ -30,40 +70,27 @@ export const createTransaction = async (req, res, next) => {
       investmentPlan,
       investmentDuration,
       returnOnInvestment,
+      status: type === "investment" ? "active" : "pending", // investments go active immediately
     });
 
-    await txn.save();
+    await txn.save({ session });
 
-    // Find wallet
-    const wallet = await Wallet.findOne({ user: userId });
-    if (!wallet) throw new CustomError(404, "Wallet not found", "ValidationError");
-
-    // For deposits, reflect in wallet as pending
-    if (type === "deposit") {
-      const pending = parseFloat(wallet.pendingDeposits.toString());
-      wallet.pendingDeposits = mongoose.Types.Decimal128.fromString(
-        (pending + amount).toString()
-      );
-      wallet.lastTransactionAt = new Date();
-      await wallet.save();
-    }
+    await session.commitTransaction();
+    session.endSession();
 
     res.status(201).json({
       success: true,
-      message: "Transaction created successfully",
+      message: `${type.charAt(0).toUpperCase() + type.slice(1)} transaction created successfully`,
       transaction: txn,
+      wallet,
     });
   } catch (error) {
-    if (error.name === "ValidationError") {
-      return res.status(400).json({
-        success: false,
-        message: "Validation failed",
-        errors: Object.values(error.errors).map((e) => e.message),
-      });
-    }
+    await session.abortTransaction();
+    session.endSession();
     next(error);
   }
 };
+
 
 // Admin: Get all transactions (with optional filters + pagination)
 export const getAllTransactions = async (req, res, next) => {
