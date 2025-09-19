@@ -18,7 +18,7 @@ const app = express();
 const port = config.port || 5000;
 
 connectDataBase();
-schedule('0 0 * * *', monitorInvestment); // Runs every 24 hours
+monitorInvestment();
 
 
 const allowedOrigins = [

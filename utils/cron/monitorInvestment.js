@@ -1,75 +1,103 @@
 import cron from "node-cron";
+import mongoose from "mongoose";
 import UserInvestment from "../../models/userInvestment.model.js";
-import InvestmentPlan from "../../models/investmentPlanModel.js";
 import Wallet from "../../models/wallet.model.js";
 
 export const calculateDailyROI = (amount, roiPercentage, durationDays) => {
-  // Simple daily ROI = (total interest / durationDays)
-  const totalROI = (amount * (roiPercentage / 100));
+  const totalROI = amount * (roiPercentage / 100);
   return totalROI / durationDays;
 };
 
+export const processInvestments = async () => {
+    try {
+        const activeInvestments = await UserInvestment.find({ status: "active" }).populate("plan");
 
-// Run every day at midnight
-const monitorInvestment = () => {
-    cron.schedule("0 0 * * *", async () => {
-        console.log("Running daily ROI job...");
+        for (const investment of activeInvestments) {
+            const { user, plan, amount, maturityDate, accruedInterest } = investment;
 
-        try {
-            // Get all active investments
-            const activeInvestments = await UserInvestment.find({ status: "active" }).populate("plan");
-
-            for (const investment of activeInvestments) {
-            const { _id, user, plan, amount, startDate, maturityDate, accruedInterest } = investment;
-
-            // Convert Decimal128
             const investedAmount = parseFloat(amount.toString());
             const accrued = parseFloat(accruedInterest.toString());
-            const planDuration = plan.duration.unit === "days" 
-                ? plan.duration.value 
-                : plan.duration.unit === "months" 
-                ? plan.duration.value * 30 
+
+            const planDuration =
+                plan.duration.unit === "days"
+                ? plan.duration.value
+                : plan.duration.unit === "months"
+                ? plan.duration.value * 30
                 : plan.duration.value * 365;
 
-            // Calculate daily ROI
             const dailyROI = calculateDailyROI(investedAmount, plan.interest, planDuration);
 
-            // Update investment
-            investment.accruedInterest = accrued + dailyROI;
+            // Update investment accruedInterest
+            investment.accruedInterest = mongoose.Types.Decimal128.fromString(
+                (accrued + dailyROI).toString()
+            );
 
-            // Check maturity
             const today = new Date();
+            const wallet = await Wallet.findOne({ user });
+            if (!wallet) continue;
+
+            const available = parseFloat(wallet.availableBalance?.toString() || "0");
+            const invested = parseFloat(wallet.investedBalance?.toString() || "0");
+            const totalEarnings = parseFloat(wallet.totalEarnings?.toString() || "0");
+            const walletAccrued = parseFloat(wallet.accruedInterest?.toString() || "0");
+
             if (today >= maturityDate) {
+                // Investment matured
                 investment.status = "completed";
 
-                // Update wallet: move funds back
-                const wallet = await Wallet.findOne({ user });
-                if (wallet) {
-                    wallet.availableBalance = wallet.availableBalance + investedAmount + (accrued + dailyROI);
-                    wallet.investedBalance = wallet.investedBalance - investedAmount;
-                    wallet.accruedInterest = 0;
-                    wallet.totalEarnings = wallet.totalEarnings + (accrued + dailyROI);
-                    wallet.lastTransactionAt = today;
-                    await wallet.save();
-                }
+                wallet.availableBalance = mongoose.Types.Decimal128.fromString(
+                    (available + investedAmount + (accrued + dailyROI)).toString()
+                );
+                wallet.investedBalance = mongoose.Types.Decimal128.fromString(
+                    (invested - investedAmount).toString()
+                );
+                wallet.totalEarnings = mongoose.Types.Decimal128.fromString(
+                    (totalEarnings + (accrued + dailyROI)).toString()
+                );
+
+                // Reset accrued interest since funds are settled
+                wallet.accruedInterest = mongoose.Types.Decimal128.fromString("0");
             } else {
-                // Just update wallet accruedInterest
-                const wallet = await Wallet.findOne({ user });
-                if (wallet) {
-                    wallet.accruedInterest = wallet.accruedInterest + dailyROI;
-                    wallet.totalEarnings = wallet.totalEarnings + dailyROI;
-                    await wallet.save();
-                }
+                // Still active → keep adding to accruedInterest + totalEarnings
+                wallet.accruedInterest = mongoose.Types.Decimal128.fromString(
+                    (walletAccrued + dailyROI).toString()
+                );
+                wallet.totalEarnings = mongoose.Types.Decimal128.fromString(
+                    (totalEarnings + dailyROI).toString()
+                );
             }
 
+            // ✅ calculate avgROI for this user’s active investments
+            const userActiveInvestments = await UserInvestment.find({ user, status: "active" });
+
+            let totalActiveInvested = 0;
+            let totalAccrued = 0;
+
+            for (const inv of userActiveInvestments) {
+                totalActiveInvested += parseFloat(inv.amount.toString());
+                totalAccrued += parseFloat(inv.accruedInterest.toString());
+            }
+
+            let avgROI = 0;
+            if (totalActiveInvested > 0) {
+                avgROI = (totalAccrued / totalActiveInvested) * 100;
+            }
+
+            wallet.avgROI = mongoose.Types.Decimal128.fromString(avgROI.toFixed(2));
+
+            wallet.lastTransactionAt = today;
+            await wallet.save();
             await investment.save();
-            }
-
-            console.log("Daily ROI job completed ✅");
-        } catch (error) {
-            console.error("Error in daily ROI job:", error);
         }
+    } catch (error) {
+        console.error("Error in investment processing:", error);
+    }
+};
+
+const monitorInvestment = () => {
+    cron.schedule("0 0 * * *", async () => {
+        await processInvestments();
     });
-}
+};
 
 export default monitorInvestment;
