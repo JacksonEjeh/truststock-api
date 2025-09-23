@@ -6,7 +6,7 @@ import { processInvestments } from "../utils/cron/monitorInvestment.js";
 const router = express.Router();
 
 router.post("/", authenticate, createUserInvestment);
-router.get("/user/:userId", authenticate, getUserInvestments);
+router.get("/user", authenticate, getUserInvestments);
 
 // Manual trigger for testing
 router.post("/test-cron", async (req, res) => {

@@ -19,7 +19,6 @@ const walletSchema = new mongoose.Schema({
     accruedInterest: { type: mongoose.Schema.Types.Decimal128, default: 0.0 },
     totalEarnings: { type: mongoose.Schema.Types.Decimal128, default: 0.0 },
     lastTransactionAt: { type: Date },
-
     avgROI: {
         type: mongoose.Schema.Types.Decimal128,
         default: 0.0,
