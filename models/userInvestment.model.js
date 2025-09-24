@@ -34,5 +34,14 @@ const userInvestmentSchema = new mongoose.Schema({
     },
 }, { timestamps: true });
 
+userInvestmentSchema.set("toJSON", {
+    transform: (_, ret) => {
+        const convertDecimal = (val) => parseFloat(val?.toString() || "0");
+        ret.accruedInterest = convertDecimal(ret.accruedInterest);
+        ret.amount = convertDecimal(ret.amount);
+        return ret;
+    }
+})
+
 const UserInvestment = mongoose.model("UserInvestment", userInvestmentSchema);
 export default UserInvestment;
