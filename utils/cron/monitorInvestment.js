@@ -84,10 +84,6 @@ export const processInvestments = async () => {
                 avgROI = (totalAccrued / totalActiveInvested) * 100;
             }
             
-            console.log("Total Invested:", totalActiveInvested);
-            console.log("Total Accrued:", totalAccrued);
-            console.log('average',avgROI)
-
             wallet.avgROI = mongoose.Types.Decimal128.fromString(avgROI.toFixed(2));
 
             wallet.lastTransactionAt = today;
