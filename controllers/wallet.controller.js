@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import Transaction from "../models/transactionModel.js";
 import Wallet from "../models/wallet.model.js"
 import CustomError from "../utils/errorHandler.js";
+import { uploadToCloudinary } from "../utils/cloudinary.js";
 
 const { Decimal128 } = mongoose.Types;
 
@@ -23,6 +24,11 @@ export const getWallet = async (req, res, next) => {
 
 export const initiateDeposit = async (req, res, next) => {
   const { amount, method } = req.body;
+  const file = req.file;
+
+  if(!file) {
+    return next(new CustomError(400, "Receipt screenshot is required", "depositError"))
+  }
 
   let numericAmount = parseFloat(amount);
   if (!Number.isFinite(numericAmount) || numericAmount <= 0 || !method) {
@@ -44,6 +50,8 @@ export const initiateDeposit = async (req, res, next) => {
     const wallet = await Wallet.findOne({ user: req.user._id }).session(session);
     if (!wallet) throw new CustomError(404, "Wallet not found", "WalletError");
 
+    const receiptUrl = await uploadToCloudinary(file.buffer, "receipts");
+
     const txn = await Transaction.create([{
       user: req.user._id,
       type: 'deposit',
@@ -51,6 +59,7 @@ export const initiateDeposit = async (req, res, next) => {
       amount: Decimal128.fromString(numericAmount.toString()),
       status: 'pending',
       reference: generateRef(),
+      receiptUrl: receiptUrl
     }], { session });
 
     const updatedPendingDeposits = parseFloat(wallet.pendingDeposits.toString()) + numericAmount;
