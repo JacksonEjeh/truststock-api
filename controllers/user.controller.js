@@ -1,5 +1,5 @@
-import User from "../models/user.model";
-import CustomError from "../utils/errorHandler";
+import User from "../models/user.model.js";
+import CustomError from "../utils/errorHandler.js";
 
 const getAllUsers = async (req, res, next,) => {
     try {
@@ -28,9 +28,10 @@ const getAllUsers = async (req, res, next,) => {
     }
 };
 
-const getUserById = async (req, res, next) => {
+export const getUserById = async (req, res, next) => {
     try {
-        const user = await User.findById(req.params.id).select("-password");
+        const userId = req.user?._id
+        const user = await User.findById(userId).select("-password");
         if (!user) {
             throw new CustomError(404, "User not found", "NotFoundError");
         }
@@ -40,9 +41,10 @@ const getUserById = async (req, res, next) => {
     }
 };
 
-const updateUser = async (req, res, next) => {
+export const updateUser = async (req, res, next) => {
     try {
-        const user = await User.findById(req.params.id);
+        const userId = req.user?._id
+        const user = await User.findById(userId);
         if(!user) {
             throw new CustomError(404, "User not found", "NotFoundError")
         } 
