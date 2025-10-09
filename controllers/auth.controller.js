@@ -209,7 +209,7 @@ const signIn = async (req, res, next) => {
         });
 
 
-        res.status(200).json({ success: true, accessToken: accessToken, user: { email: user.email, first_name: user.first_name, last_name: user.last_name, isProfileComplete: user.isProfileComplete } });
+        res.status(200).json({ success: true, accessToken: accessToken, user: { email: user.email, first_name: user.first_name, last_name: user.last_name, isProfileComplete: user.isProfileComplete, role: user.role } });
     }catch (error){
         next(error)
     }
